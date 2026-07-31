@@ -1,6 +1,6 @@
 # Heart Disease Risk Prediction App ❤️
 
-WEBSITE link:
+Website streamlit app link:
 [Heart Disease Prediction App]( https://logistic-reg-forhd.streamlit.app/#app-name)
 
 An interactive web application built with Streamlit and Scikit-Learn to assess patient risk for heart disease using a trained Logistic Regression model.
