@@ -20,7 +20,7 @@ st.set_page_config(
 @st.cache_resource
 def load_artifacts():
     scaler = joblib.load("scaler.joblib")
-    model = joblib.load("logistic_model.joblib")
+    model = joblib.load("logistic_reg (1).joblib")
     return scaler, model
 
 try:
