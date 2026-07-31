@@ -51,33 +51,36 @@ with st.form("prediction_form"):
 
     submit = st.form_submit_button("Predict Risk")
 
-# --- THIS IS THE UPDATED PART ---
 if submit:
-    # Map Gender string to numerical value used during training (Male = 1, Female = 0)
-    gender_encoded = 1 if gender == "Male" else 0
+    try:
+        # Map Gender string to numerical value (Male = 1, Female = 0)
+        gender_encoded = 1 if gender == "Male" else 0
 
-    # Build input DataFrame matching exact training column names and order:
-    input_data = pd.DataFrame([{
-        'Age': age,
-        'Gender': gender_encoded,
-        'Resting_Blood_Pressure': resting_bp,
-        'Cholesterol': cholesterol,
-        'Maximum_Heart_Rate': max_hr
-    }])
+        # Extract expected column names directly from scaler to prevent warning hangs
+        if hasattr(scaler, "feature_names_in_"):
+            columns = scaler.feature_names_in_
+        else:
+            columns = ['Age', 'Gender', 'Resting_Blood_Pressure', 'Cholesterol', 'Maximum_Heart_Rate']
 
-    # Scale input features (.values fixes the column name error)
-    scaled_input = scaler.transform(input_data.values)
+        # Build DataFrame matching scaler feature structure
+        input_data = pd.DataFrame([[age, gender_encoded, resting_bp, cholesterol, max_hr]], columns=columns)
 
-    # Predict class and probability
-    prediction = model.predict(scaled_input)[0]
-    prediction_proba = model.predict_proba(scaled_input)[0][1]
+        # Scale input features
+        scaled_input = scaler.transform(input_data)
 
-    st.markdown("---")
-    st.subheader("Prediction Result")
+        # Predict class and probability
+        prediction = model.predict(scaled_input)[0]
+        prediction_proba = model.predict_proba(scaled_input)[0][1]
 
-    if prediction == 1:
-        st.error(f"⚠️ **High Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
-        st.write("The model indicates an elevated likelihood of heart disease. Clinical follow-up is recommended.")
-    else:
-        st.success(f"✅ **Low Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
-        st.write("The model indicates a low likelihood of heart disease based on the provided inputs.")
+        st.markdown("---")
+        st.subheader("Prediction Result")
+
+        if prediction == 1:
+            st.error(f"⚠️ **High Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
+            st.write("The model indicates an elevated likelihood of heart disease. Clinical follow-up is recommended.")
+        else:
+            st.success(f"✅ **Low Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
+            st.write("The model indicates a low likelihood of heart disease based on the provided inputs.")
+
+    except Exception as err:
+        st.error(f"An error occurred during prediction: {err}")
