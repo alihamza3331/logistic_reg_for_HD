@@ -7,80 +7,77 @@ st.write('Hello world!')
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
+import joblib
 
-# App Title and Description
-st.title("❤️ Heart Disease Prediction App")
-st.write("This app uses a Logistic Regression model to predict whether a person has heart disease based on their medical parameters.")
+# Page Configuration
+st.set_page_config(
+    page_title="Heart Disease Risk Predictor",
+    page_icon="❤️",
+    layout="centered"
+)
 
-# Load Data
-@st.cache_data
-def load_data():
-    # Update the file path as necessary if running locally
-    df = pd.read_csv("heart_disease.csv")
-    return df
+# Load the trained model and scaler
+@st.cache_resource
+def load_artifacts():
+    scaler = joblib.load("scaler.joblib")
+    model = joblib.load("logistic_model.joblib")
+    return scaler, model
 
 try:
-    df = load_data()
+    scaler, model = load_artifacts()
 except Exception as e:
-    st.error(f"Error loading data: {e}")
+    st.error(f"Error loading model or scaler files: {e}")
+    st.info("Ensure 'scaler.joblib' and 'logistic_model.joblib' are present in the same folder as app.py.")
     st.stop()
 
-# Display raw data preview if requested
-if st.checkbox("Show Raw Dataset"):
-    st.subHeader("Dataset Preview")
-    st.dataframe(df.head())
+# Header
+st.title("❤️ Heart Disease Prediction App")
+st.write("Enter patient clinical parameters below to evaluate heart disease risk.")
 
-# Preprocessing and Training Model
-# Encoding 'Gender' column if it's categorical (e.g., Male/Female)
-df_model = df.copy()
-le = LabelEncoder()
-if 'Gender' in df_model.columns:
-    df_model['Gender'] = le.fit_transform(df_model['Gender'])  # Male/Female -> 1/0 (or vice versa)
+# Input Form
+with st.form("prediction_form"):
+    st.subheader("Patient Attributes")
 
-# Features and Target
-X = df_model.drop(columns=['Heart_Disease'])
-y = df_model['Heart_Disease']
+    col1, col2 = st.columns(2)
 
-# Train-Test Split & Model Training
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
+    with col1:
+        age = st.number_input("Age", min_value=1, max_value=120, value=50, step=1)
+        gender = st.selectbox("Gender", options=["Male", "Female"])
+        resting_bp = st.number_input("Resting Blood Pressure (mm Hg)", min_value=50, max_value=250, value=120, step=1)
 
-# Show model accuracy in sidebar
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-st.sidebar.subheader("Model Performance")
-st.sidebar.write(f"**Accuracy:** {accuracy * 100:.2f}%")
+    with col2:
+        cholesterol = st.number_input("Cholesterol (mg/dl)", min_value=100, max_value=600, value=220, step=1)
+        max_hr = st.number_input("Maximum Heart Rate", min_value=50, max_value=250, value=150, step=1)
 
-# User Input Form in Sidebar / Main Page
-st.subheader("Enter Patient Details for Prediction:")
+    submit = st.form_submit_button("Predict Risk")
 
-# Creating input widgets dynamically based on features
-age = st.slider("Age", int(df['Age'].min()), int(df['Age'].max()), int(df['Age'].mean()))
+if submit:
+    # Map Gender string to numerical value used during training (Male = 1, Female = 0)
+    gender_encoded = 1 if gender == "Male" else 0
 
-# Handling Gender mapping cleanly
-gender_input = st.selectbox("Gender", df['Gender'].unique())
-gender = 1 if gender_input == "Male" else 0
+    # Build input DataFrame matching exact training column names and order:
+    # ['Age', 'Gender', 'Resting_Blood_Pressure', 'Cholesterol', 'Maximum_Heart_Rate']
+    input_data = pd.DataFrame([{
+        'Age': age,
+        'Gender': gender_encoded,
+        'Resting_Blood_Pressure': resting_bp,
+        'Cholesterol': cholesterol,
+        'Maximum_Heart_Rate': max_hr
+    }])
 
-resting_bp = st.slider("Resting Blood Pressure", int(df['Resting_Blood_Pressure'].min()), int(df['Resting_Blood_Pressure'].max()), int(df['Resting_Blood_Pressure'].mean()))
-cholesterol = st.slider("Cholesterol", int(df['Cholesterol'].min()), int(df['Cholesterol'].max()), int(df['Cholesterol'].mean()))
-max_heart_rate = st.slider("Maximum Heart Rate", int(df['Maximum_Heart_Rate'].min()), int(df['Maximum_Heart_Rate'].max()), int(df['Maximum_Heart_Rate'].mean()))
+    # Scale input features
+    scaled_input = scaler.transform(input_data)
 
-# Prediction Button
-if st.button("Predict Heart Disease"):
-    # Prepare input array
-    input_data = np.array([[age, gender, resting_bp, cholesterol, max_heart_rate]])
-    
-    # Make prediction
-    prediction = model.predict(input_data)
-    prediction_proba = model.predict_proba(input_data)
-    
-    st.subheader("Prediction Result:")
-    if prediction[0] == 1:
-        st.error(f"⚠️ The model predicts that the patient **has a risk of Heart Disease** (Confidence: {prediction_proba[0][1]*100:.2f}%)")
+    # Predict class and probability
+    prediction = model.predict(scaled_input)[0]
+    prediction_proba = model.predict_proba(scaled_input)[0][1]
+
+    st.markdown("---")
+    st.subheader("Prediction Result")
+
+    if prediction == 1:
+        st.error(f"⚠️ **High Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
+        st.write("The model indicates an elevated likelihood of heart disease. Clinical follow-up is recommended.")
     else:
-        st.success(f"✅ The model predicts that the patient **does NOT have a risk of Heart Disease** (Confidence: {prediction_proba[0][0]*100:.2f}%)")
+        st.success(f"✅ **Low Risk of Heart Disease** (Probability: {prediction_proba:.1%})")
+        st.write("The model indicates a low likelihood of heart disease based on the provided inputs.")
