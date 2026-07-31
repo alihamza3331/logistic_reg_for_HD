@@ -2,7 +2,7 @@ import streamlit as st
 
 st.title('Logitic Regression Model for Heart Disease  ')
 
-st.write('Hello world!')
+st.write('Build By Ali Hamza and thanks to Sir Zafer for teching us how to make app like this')
 
 import streamlit as st
 import pandas as pd
