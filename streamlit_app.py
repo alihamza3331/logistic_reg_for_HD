@@ -27,7 +27,7 @@ try:
     scaler, model = load_artifacts()
 except Exception as e:
     st.error(f"Error loading model or scaler files: {e}")
-    st.info("Ensure 'scaler.joblib' and 'logistic_model.joblib' are present in the same folder as app.py.")
+    st.info("Ensure 'scaler.joblib' and 'logistic_reg (1).joblib' are present in the same folder as app.py.")
     st.stop()
 
 # Header
@@ -51,12 +51,12 @@ with st.form("prediction_form"):
 
     submit = st.form_submit_button("Predict Risk")
 
+# --- THIS IS THE UPDATED PART ---
 if submit:
     # Map Gender string to numerical value used during training (Male = 1, Female = 0)
     gender_encoded = 1 if gender == "Male" else 0
 
     # Build input DataFrame matching exact training column names and order:
-    # ['Age', 'Gender', 'Resting_Blood_Pressure', 'Cholesterol', 'Maximum_Heart_Rate']
     input_data = pd.DataFrame([{
         'Age': age,
         'Gender': gender_encoded,
@@ -65,8 +65,8 @@ if submit:
         'Maximum_Heart_Rate': max_hr
     }])
 
-    # Scale input features
-    scaled_input = scaler.transform(input_data)
+    # Scale input features (.values fixes the column name error)
+    scaled_input = scaler.transform(input_data.values)
 
     # Predict class and probability
     prediction = model.predict(scaled_input)[0]
