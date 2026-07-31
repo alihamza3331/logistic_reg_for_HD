@@ -34,6 +34,13 @@ except Exception as e:
 st.title("❤️ Heart Disease Prediction App")
 st.write("Enter patient clinical parameters below to evaluate heart disease risk.")
 
+# Optional: Expandable section to inspect expected model features
+with st.expander("🔍 Debug Info: Expected Model Features"):
+    if hasattr(scaler, "feature_names_in_"):
+        st.write("**Scaler expects these features in order:**", list(scaler.feature_names_in_))
+    else:
+        st.write("Scaler was trained without feature names.")
+
 # Input Form
 with st.form("prediction_form"):
     st.subheader("Patient Attributes")
@@ -53,17 +60,54 @@ with st.form("prediction_form"):
 
 if submit:
     try:
-        # Map Gender string to numerical value (Male = 1, Female = 0)
+        # Map Gender string to numerical value
         gender_encoded = 1 if gender == "Male" else 0
 
-        # Extract expected column names directly from scaler to prevent warning hangs
-        if hasattr(scaler, "feature_names_in_"):
-            columns = scaler.feature_names_in_
-        else:
-            columns = ['Age', 'Gender', 'Resting_Blood_Pressure', 'Cholesterol', 'Maximum_Heart_Rate']
+        # Build dictionary with input values
+        raw_inputs = {
+            'age': age,
+            'gender': gender_encoded,
+            'sex': gender_encoded,
+            'resting_blood_pressure': resting_bp,
+            'trestbps': resting_bp,
+            'cholesterol': cholesterol,
+            'chol': cholesterol,
+            'maximum_heart_rate': max_hr,
+            'thalach': max_hr
+        }
 
-        # Build DataFrame matching scaler feature structure
-        input_data = pd.DataFrame([[age, gender_encoded, resting_bp, cholesterol, max_hr]], columns=columns)
+        # Align inputs dynamically with expected scaler feature names
+        if hasattr(scaler, "feature_names_in_"):
+            expected_cols = list(scaler.feature_names_in_)
+            input_dict = {}
+
+            for col in expected_cols:
+                col_clean = col.lower().replace(' ', '_')
+                
+                # Match feature names based on keywords
+                if 'age' in col_clean:
+                    input_dict[col] = age
+                elif 'gen' in col_clean or 'sex' in col_clean:
+                    input_dict[col] = gender_encoded
+                elif 'bp' in col_clean or 'press' in col_clean or 'trest' in col_clean:
+                    input_dict[col] = resting_bp
+                elif 'chol' in col_clean:
+                    input_dict[col] = cholesterol
+                elif 'hr' in col_clean or 'heart' in col_clean or 'thalach' in col_clean:
+                    input_dict[col] = max_hr
+                else:
+                    input_dict[col] = 0
+
+            input_data = pd.DataFrame([input_dict])[expected_cols]
+        else:
+            # Fallback default order
+            input_data = pd.DataFrame([{
+                'Age': age,
+                'Gender': gender_encoded,
+                'Resting_Blood_Pressure': resting_bp,
+                'Cholesterol': cholesterol,
+                'Maximum_Heart_Rate': max_hr
+            }])
 
         # Scale input features
         scaled_input = scaler.transform(input_data)
@@ -83,4 +127,4 @@ if submit:
             st.write("The model indicates a low likelihood of heart disease based on the provided inputs.")
 
     except Exception as err:
-        st.error(f"An error occurred during prediction: {err}")
+        st.error(f"Error performing prediction: {err}")
