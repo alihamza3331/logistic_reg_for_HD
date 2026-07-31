@@ -1,25 +1,12 @@
-# 📦 Streamlit App Starter Kit 
-```
-⬆️ (Replace above with your app's name)
-```
+# Heart Disease Risk Prediction App ❤️
 
-Description of the app ...
+An interactive web application built with Streamlit and Scikit-Learn to assess patient risk for heart disease using a trained Logistic Regression model.
 
-## Demo App
+## 📁 Repository Structure
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://app-starter-kit.streamlit.app/)
-
-## GitHub Codespaces
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/app-starter-kit?quickstart=1)
-
-## Section Heading
-
-This is filler text, please replace this with text for this section.
-
-## Further Reading
-
-This is filler text, please replace this with a explanatory text about further relevant resources for this repo
-- Resource 1
-- Resource 2
-- Resource 3
+```text
+├── app.py                  # Main Streamlit web application code
+├── logistic_reg(1).joblib   # Trained Logistic Regression model file
+├── scaler.joblib           # Trained StandardScaler object
+├── requirements.txt        # Python package dependencies
+└── README.md               # Project documentation
