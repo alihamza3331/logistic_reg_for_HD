@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title('🎈 App Name')
+st.title('Logitic Regression Model for Heart Disease  ')
 
 st.write('Hello world!')
 
